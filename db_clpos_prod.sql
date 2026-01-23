@@ -289,18 +289,18 @@ CREATE TABLE `category` (
 LOCK TABLES `category` WRITE;
 /*!40000 ALTER TABLE `category` DISABLE KEYS */;
 INSERT INTO `category` VALUES
-(1,'Beverages','2026-01-21 13:04:41',NULL,'2026-01-21 07:34:41',NULL,'\0'),
-(2,'Snacks','2026-01-21 13:04:41',NULL,'2026-01-21 07:34:41',NULL,'\0'),
-(3,'Dairy Products','2026-01-21 13:04:41',NULL,'2026-01-21 07:34:41',NULL,'\0'),
-(4,'Fruits & Vegetables','2026-01-21 13:04:41',NULL,'2026-01-21 07:34:41',NULL,'\0'),
-(5,'Bakery','2026-01-21 13:04:41',NULL,'2026-01-21 07:34:41',NULL,'\0'),
-(6,'Meat & Seafood','2026-01-21 13:04:41',NULL,'2026-01-21 07:34:41',NULL,'\0'),
-(7,'Frozen Foods','2026-01-21 13:04:41',NULL,'2026-01-21 07:34:41',NULL,'\0'),
-(8,'Household Items','2026-01-21 13:04:41',NULL,'2026-01-21 07:34:41',NULL,'\0'),
-(9,'Personal Care','2026-01-21 13:04:41',NULL,'2026-01-21 07:34:41',NULL,'\0'),
-(10,'Electronics & Accessories','2026-01-21 13:04:41',NULL,'2026-01-21 07:34:41',NULL,'\0'),
-(11,'Clothing & Apparel','2026-01-21 13:04:41',NULL,'2026-01-21 07:34:41',NULL,'\0'),
-(12,'Services','2026-01-21 13:04:41',NULL,'2026-01-21 07:34:41',NULL,'\0');
+(1,'Beverages','2026-01-23 21:17:25',NULL,'2026-01-23 15:47:25',NULL,'\0'),
+(2,'Snacks','2026-01-23 21:17:25',NULL,'2026-01-23 15:47:25',NULL,'\0'),
+(3,'Dairy Products','2026-01-23 21:17:25',NULL,'2026-01-23 15:47:25',NULL,'\0'),
+(4,'Fruits & Vegetables','2026-01-23 21:17:25',NULL,'2026-01-23 15:47:25',NULL,'\0'),
+(5,'Bakery','2026-01-23 21:17:25',NULL,'2026-01-23 15:47:25',NULL,'\0'),
+(6,'Meat & Seafood','2026-01-23 21:17:25',NULL,'2026-01-23 15:47:25',NULL,'\0'),
+(7,'Frozen Foods','2026-01-23 21:17:25',NULL,'2026-01-23 15:47:25',NULL,'\0'),
+(8,'Household Items','2026-01-23 21:17:25',NULL,'2026-01-23 15:47:25',NULL,'\0'),
+(9,'Personal Care','2026-01-23 21:17:25',NULL,'2026-01-23 15:47:25',NULL,'\0'),
+(10,'Electronics & Accessories','2026-01-23 21:17:25',NULL,'2026-01-23 15:47:25',NULL,'\0'),
+(11,'Clothing & Apparel','2026-01-23 21:17:25',NULL,'2026-01-23 15:47:25',NULL,'\0'),
+(12,'Services','2026-01-23 21:17:25',NULL,'2026-01-23 15:47:25',NULL,'\0');
 /*!40000 ALTER TABLE `category` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -3970,14 +3970,14 @@ DELIMITER ;
 /*!50003 SET @saved_col_connection = @@collation_connection */ ;
 /*!50003 SET character_set_client  = utf8mb4 */ ;
 /*!50003 SET character_set_results = utf8mb4 */ ;
-/*!50003 SET collation_connection  = utf8mb4_unicode_ci */ ;
+/*!50003 SET collation_connection  = utf8mb4_general_ci */ ;
 DELIMITER ;;
 CREATE DEFINER=`root`@`localhost` PROCEDURE `drp_currencies_select`(
       IN p_UserLogID INT
 )
 sp: BEGIN
 
-SELECT currencyId as id ,concat(currencyName,' (',currencyCode,' / ', ifnull(symbol,'')  ,')') as displayName from currency;
+SELECT currencyId as id ,concat(currencyName,' (',currencyCode,' / ', ifnull(symbol,'')  ,')') as displayName from currency order by currencyName;
 
 
 end ;;
@@ -7697,6 +7697,1716 @@ DELIMITER ;;
 CREATE DEFINER=`root`@`localhost` PROCEDURE `Product_Insert_Update`(
     IN p_tableID INT,
     IN p_storeIdList_json json,
+
+    IN p_ProductName VARCHAR(500),
+    IN p_CategoryIdList_json json,
+   IN p_variationProductList_json json,
+     
+    IN p_MeasurementUnitId int,
+   IN p_productTypeId int,
+   IN p_isNotForSelling bit,
+   IN p_imgUrl text,
+  IN p_isUnique bit,
+ IN p_isStockTracked bit,
+  IN p_isProductItem bit,
+   IN p_isAssemblyProduct bit,
+    IN p_BrandId int,
+
+
+
+    IN p_ReorderLevel DECIMAL(10, 2),
+   in p_isExpiringProduct bit,
+    IN p_SaveType VARCHAR(1),
+    IN p_UserLogID INT,
+	IN p_UTC_Offset VARCHAR(50),
+    IN p_PageName VARCHAR(50),
+    
+    IN p_IsConfirm BIT,
+    OUT p_ResponseStatus VARCHAR(50),
+    OUT p_OutputMessage VARCHAR(1000),
+    OUT p_productId int
+)
+sp: BEGIN
+
+	declare v_productId int;
+	
+		DECLARE noOfItemsInCategoryList int;
+        DECLARE i_categoryList int default 0;
+        
+       DECLARE noOfVariationProductList int;
+        DECLARE i_variationProductList int default 0;
+       
+        declare v_totalItems_tblVariationProduct int;
+         declare v_variationProductId int;
+            declare v_variationProductId_new int;
+        
+         	DECLARE v_variationDetailsObjArr JSON;
+         	
+         	
+         	
+         	
+DECLARE v_lastInsertedId int;
+ 	
+declare i_variationDetails int;
+declare noOfVariationDetails int;
+
+declare v_variationTypeId varchar(50);
+declare v_variationValue varchar(50); 
+declare v_variationName varchar(50); 
+
+
+        
+
+        
+        declare v_totalItems_tblComboProductDetail int;
+       
+        DECLARE v_subProductDetailsForVari_ObjArr JSON;
+
+        DECLARE noOfSubProductslList int;
+        DECLARE i_subProductsList int default 0;
+        declare i_subProductDetailsForVari int;
+        
+          DECLARE noOfSubProductDetailsForVari int;
+          
+          declare v_subProductAllProductId_mat int;
+          declare v_subProductQty decimal(10,2);
+        
+        declare v_allProductId_mat int;
+         declare v_allProductId_sv int;
+       
+        declare v_variationProductIdStr varchar(50);
+       declare v_sku varchar(50);
+ 		declare v_barcode varchar(50);
+
+		DECLARE noOfComboProductDetailList int;
+        DECLARE i_comboProductDetailList int default 0;
+       
+       
+       		DECLARE noOfStoreIdList_json int;
+        DECLARE i_storeIdListList int default 0;
+       	DECLARE v_storeId int;
+       
+     DECLARE  v_totalItems_tblStoreIdList int;
+      DECLARE v_storeIdTmp int;
+       declare v_totalItems_tblSubProducts int;
+     
+       
+       declare v_qty decimal(10,2);
+ 		declare v_comboSku_mat varchar(50);
+ 	declare v_variationComboSku_mat varchar(50);
+ 	
+ 
+ 	 declare v_comboProductId_mat varchar(50);
+ 	declare v_variationComboProductId_mat_str varchar(50);
+			 
+ 
+
+ 	 
+ 	 
+ 	 
+ 	declare v_productId_mat int;
+ 	declare v_variationProductId_mat int;
+ 
+ 	declare v_variationProductIdTmp int;
+ 	
+        declare v_generatedProductNo varchar(50);
+       
+       declare v_inventoryId int;
+      
+
+   declare v_productTypeId_mat int;
+     
+   
+ declare  v_unitCost_str varchar(50);
+  declare  v_unitPrice_str varchar(50);
+   declare  v_taxPerc_str varchar(50);
+ 
+ 
+        declare v_unitPrice decimal(10,2);
+   declare v_unitCost decimal(10,2);
+         declare v_taxPerc decimal(10,2);
+
+            declare v_allProductId int;
+            
+
+        
+                  
+              declare v_skuDupCount int default 0;  
+                declare v_barcodeDupCount int default 0;
+              
+        DECLARE v_dupSkus TEXT;    
+           
+    DECLARE v_dupBarcodes TEXT;    
+        
+        
+           
+
+     DECLARE err_message VARCHAR(255);
+     
+     
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION
+       begin
+	        ROLLBACK;
+            
+            GET DIAGNOSTICS CONDITION 1 err_message = MESSAGE_TEXT;
+            
+            SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = err_message;
+        END; 
+   
+   
+
+   	if (p_tableID<1) then
+		set p_OutputMessage='Invalid tableId';
+        set p_ResponseStatus='failed';
+      
+        leave sp;
+	end if;
+
+
+   	
+   	if (p_isAssemblyProduct is null) then
+		set p_OutputMessage='p_isAssemblyProduct can not be null';
+        set p_ResponseStatus='failed';
+
+        leave sp;
+	end if;
+   	
+   
+	set noOfItemsInCategoryList=JSON_LENGTH(p_CategoryIdList_json);
+  
+	if JSON_LENGTH(p_CategoryIdList_json)=0 or p_CategoryIdList_json is null then
+		set p_ResponseStatus='failed';
+		set p_OutputMessage=concat('At least one category is required.');
+		leave sp;
+	end if;
+    
+	if JSON_LENGTH(p_CategoryIdList_json)>3 then
+		set p_ResponseStatus='failed';
+		set p_OutputMessage=concat('More than 3 categories selected. Please select a maximum of 3 categories.');
+		leave sp;
+	end if;
+
+ DROP TEMPORARY TABLE IF EXISTS tblcategory;
+  CREATE TEMPORARY TABLE tblcategory (
+    orderId INT AUTO_INCREMENT PRIMARY KEY,
+    categoryId INT
+);
+   
+        WHILE i_categoryList < noOfItemsInCategoryList DO
+           set @_categoryId = JSON_EXTRACT(p_CategoryIdList_json, CONCAT('$[', i_categoryList, ']'));
+			if not isNumeric(@_categoryId) then
+				set p_ResponseStatus='failed';
+				set p_OutputMessage=concat('Invalid categoryId : ',@_categoryId);
+				leave sp;
+			end if;
+            
+            if not exists(select * from category where categoryId=@_categoryId) then
+				set p_ResponseStatus='failed';
+				set p_OutputMessage=concat('Un registerd categoryId : ',@_categoryId);
+				leave sp;
+			end if;
+
+            INSERT INTO tblcategory(categoryId) VALUES (@_categoryId);
+            
+            SET i_categoryList = i_categoryList + 1;
+            
+		END WHILE;
+        
+
+  if p_isProductItem=false then
+  set p_isStockTracked=false;
+  end if;
+  
+
+
+
+
+
+
+
+
+
+
+	  
+  
+  
+DROP TEMPORARY TABLE IF EXISTS tblSubProducts;
+  CREATE TEMPORARY TABLE tblSubProducts (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    qty decimal(10,2),
+    allProductId_mat int
+);
+
+
+ if p_isAssemblyProduct=true && p_isStockTracked=true then
+    	set p_ResponseStatus='failed';
+		set p_OutputMessage=concat('An assembly product cannot be a stock-tracked item');
+		leave sp;
+  
+  end if;
+  
+
+
+  
+
+	 
+     if p_productTypeId=2 then
+
+set noOfVariationProductList=JSON_LENGTH(p_variationProductList_json);
+  
+	if JSON_LENGTH(p_variationProductList_json)=0 or p_variationProductList_json is null then
+		set p_ResponseStatus='failed';
+		set p_OutputMessage=concat('At least one variation is required.');
+		leave sp;
+	end if;
+	
+
+
+
+
+
+DROP TEMPORARY TABLE IF EXISTS tblVariationProduct;
+DROP TEMPORARY TABLE IF EXISTS tmpVariationDetails;
+DROP TEMPORARY TABLE IF EXISTS tmpSubProductDetailsForVari;
+
+
+CREATE TEMPORARY TABLE tblVariationProduct (
+    variationProductIdTmp INT AUTO_INCREMENT PRIMARY KEY,
+    variationProductId INT,
+    sku VARCHAR(50),
+    barcode VARCHAR(50),
+    unitCost decimal(10,2),
+    unitPrice decimal(10,2),
+    taxPerc decimal(10,2),
+    isAssemblyProduct bit
+);
+
+
+CREATE TEMPORARY TABLE tmpVariationDetails (
+    detailId INT AUTO_INCREMENT PRIMARY KEY,
+    variationProductIdTmp INT,
+    variationProductId INT,
+    variationTypeId VARCHAR(50),
+    variationValue VARCHAR(50)
+);
+
+CREATE TEMPORARY TABLE tmpSubProductDetailsForVari (
+    detailId INT AUTO_INCREMENT PRIMARY KEY,
+    variationProductIdTmp INT,
+    variationProductId INT,
+    qty decimal(10,2),
+    allProductId_mat int
+);
+
+
+SET i_variationProductList = 0;
+
+
+WHILE i_variationProductList < noOfVariationProductList DO	
+    
+
+
+    
+
+    SET v_unitCost_str = JSON_UNQUOTE(JSON_EXTRACT(p_variationProductList_json, CONCAT('$[', i_variationProductList, '].unitCost')));
+
+    
+    IF v_unitCost_str IS NULL OR v_unitCost_str = '' THEN
+        SET p_ResponseStatus = 'failed';
+        SET p_OutputMessage = CONCAT('UnitCost is required');
+        LEAVE sp;
+    END IF;
+    
+    
+    
+       SET v_unitPrice_str = JSON_UNQUOTE(JSON_EXTRACT(p_variationProductList_json, CONCAT('$[', i_variationProductList, '].unitPrice')));
+
+    
+    IF v_unitPrice_str IS NULL OR v_unitPrice_str = '' THEN
+        SET p_ResponseStatus = 'failed';
+        SET p_OutputMessage = CONCAT('UnitPrice is required');
+        LEAVE sp;
+    END IF;
+    
+    
+    
+      SET v_taxPerc_str = JSON_UNQUOTE(JSON_EXTRACT(p_variationProductList_json, CONCAT('$[', i_variationProductList, '].taxPerc')));
+
+    
+    IF v_taxPerc_str IS NULL OR v_taxPerc_str = '' THEN
+        SET p_ResponseStatus = 'failed';
+        SET p_OutputMessage = CONCAT('Tax is required');
+        LEAVE sp;
+    END IF;
+    
+    
+
+set v_variationProductIdStr=JSON_UNQUOTE(JSON_EXTRACT(p_variationProductList_json, CONCAT('$[', i_variationProductList, '].variationProductId')));
+    SET v_sku = JSON_UNQUOTE(JSON_EXTRACT(p_variationProductList_json, CONCAT('$[', i_variationProductList, '].sku')));
+    SET v_barcode = JSON_UNQUOTE(JSON_EXTRACT(p_variationProductList_json, CONCAT('$[', i_variationProductList, '].barcode')));      
+      SET v_unitCost = JSON_UNQUOTE(JSON_EXTRACT(p_variationProductList_json, CONCAT('$[', i_variationProductList, '].unitCost')));      
+SET v_unitPrice = JSON_UNQUOTE(JSON_EXTRACT(p_variationProductList_json, CONCAT('$[', i_variationProductList, '].unitPrice')));      
+   SET v_taxPerc = JSON_UNQUOTE(JSON_EXTRACT(p_variationProductList_json, CONCAT('$[', i_variationProductList, '].taxPerc')));      
+
+
+
+ 
+    
+    IF v_sku IS NULL OR v_sku = '' THEN
+        SET p_ResponseStatus = 'failed';
+        SET p_OutputMessage = CONCAT('SKU is required',v_sku);
+        LEAVE sp;
+   END IF;
+
+
+
+   
+   if v_barcode='null' then set v_barcode=null; end if;
+   if v_barcode='' then set v_barcode=null; end if;
+
+    
+    SET v_variationDetailsObjArr = JSON_EXTRACT(p_variationProductList_json, CONCAT('$[', i_variationProductList, '].variationDetails'));
+ if v_variationDetailsObjArr='null' then set v_variationDetailsObjArr=null; end if;
+
+
+
+
+
+
+   
+   if v_variationProductIdStr='null' then set v_variationProductIdStr=null; end if;
+   
+   
+    
+    INSERT INTO tblVariationProduct(variationProductId,sku, barcode,unitCost,unitPrice,taxPerc) 
+    VALUES (v_variationProductIdStr,v_sku, v_barcode,v_unitCost,v_unitPrice,v_taxPerc);
+    
+    
+    SET v_lastInsertedId = LAST_INSERT_ID();
+
+    
+    SET i_variationDetails = 0;
+    SET noOfVariationDetails = JSON_LENGTH(v_variationDetailsObjArr);
+
+    
+    WHILE i_variationDetails < noOfVariationDetails DO
+        
+        SET v_variationTypeId = JSON_UNQUOTE(JSON_EXTRACT(v_variationDetailsObjArr, CONCAT('$[', i_variationDetails, '].variationTypeId')));
+      SET v_variationValue = JSON_UNQUOTE(JSON_EXTRACT(v_variationDetailsObjArr, CONCAT('$[', i_variationDetails, '].variationValue')));
+       
+        if v_variationValue='' then set v_variationValue=null; end if;
+  if v_variationValue is null then
+   	set p_ResponseStatus='failed';
+		set p_OutputMessage=concat('variation value is required');
+		leave sp;
+	end if;
+
+    
+       
+        
+        INSERT INTO tmpVariationDetails(variationProductIdTmp,variationProductId, variationTypeId, variationValue)
+        VALUES (v_lastInsertedId,v_variationProductIdStr, v_variationTypeId, v_variationValue);
+
+        
+        SET i_variationDetails = i_variationDetails + 1;
+    END WHILE;
+ 
+        
+        
+        
+        
+   
+   if p_isAssemblyProduct=true then
+  
+   
+
+   
+   
+            
+    SET v_subProductDetailsForVari_ObjArr = JSON_EXTRACT(p_variationProductList_json, CONCAT('$[', i_variationProductList, '].subProductsList'));
+ if v_subProductDetailsForVari_ObjArr='null' then set v_subProductDetailsForVari_ObjArr=null; end if;
+
+    if v_subProductDetailsForVari_ObjArr is null then
+    	set p_ResponseStatus='failed';
+		set p_OutputMessage=concat('Sub product can not be null for the product sku:',v_sku);
+		leave sp;
+ 	end if;
+        
+        
+            SET i_subProductDetailsForVari = 0;
+    SET noOfSubProductDetailsForVari = JSON_LENGTH(v_subProductDetailsForVari_ObjArr);
+
+        
+  if noOfSubProductDetailsForVari=0 then 
+ 	set p_ResponseStatus='failed';
+ 	set p_OutputMessage=concat('An assembly product SKU:',v_sku,' must have at least one sub-product.');
+ 	leave sp;
+  end if;
+
+     
+
+    WHILE i_subProductDetailsForVari < noOfSubProductDetailsForVari DO
+    
+        SET v_subProductAllProductId_mat = JSON_UNQUOTE(JSON_EXTRACT(v_subProductDetailsForVari_ObjArr, CONCAT('$[', i_subProductDetailsForVari, '].allProductId')));
+
+        SET v_subProductQty = JSON_UNQUOTE(JSON_EXTRACT(v_subProductDetailsForVari_ObjArr, CONCAT('$[', i_subProductDetailsForVari, '].qty')));
+             
+        
+        
+    if not exists(select * from all_product where allProductId=v_subProductAllProductId_mat)  then
+		set p_ResponseStatus='failed';
+		set p_OutputMessage=concat('invalid sub product.');
+		leave sp;
+	end if;
+	
+
+
+  
+	
+	if exists(select * from all_product ap inner join variation_product vp on ap.variationProductId=vp.variationProductId
+	inner join product p on vp.productId=p.productId where p.isAssemblyProduct=1 and ap.allProductId=v_subProductAllProductId_mat)  then
+		set p_ResponseStatus='failed';
+		set p_OutputMessage=concat('An assembly product cannot be a sub-product of another assembly product.');
+		leave sp;
+	end if;
+	
+		
+
+	
+        
+        
+        
+        INSERT INTO tmpSubProductDetailsForVari(variationProductIdTmp,variationProductId, qty, allProductId_mat)
+        VALUES (v_lastInsertedId,v_variationProductIdStr, v_subProductQty, v_subProductAllProductId_mat);
+         
+        
+        
+        SET i_subProductDetailsForVari = i_subProductDetailsForVari + 1;
+    END WHILE;
+        
+        IF EXISTS (
+    SELECT 1
+    FROM tmpSubProductDetailsForVari subp
+    inner JOIN store_inventory_product sip 
+        ON subp.allProductId_mat = sip.allProductId
+    WHERE sip.inventoryId IS NULL
+) THEN
+    SET p_OutputMessage = 'A sub-item must always be a stock-tracked product.';
+    SET p_ResponseStatus = 'failed';
+    ROLLBACK;
+    LEAVE sp;
+END IF;
+        
+IF (
+    SELECT COUNT(*)
+    FROM (
+        SELECT variationProductId, variationProductIdTmp, allProductId_mat
+        FROM tmpSubProductDetailsForVari
+        GROUP BY variationProductId, variationProductIdTmp, allProductId_mat
+        HAVING COUNT(*) > 1
+    ) dup
+) > 0 THEN
+    SET p_ResponseStatus = 'failed';
+    SET p_OutputMessage = 'Duplicated sub-products are not allowed for the same variation.';
+    ROLLBACK;
+    LEAVE sp;
+END IF;
+
+        
+
+end if;   
+        
+     
+    
+    SET i_variationProductList = i_variationProductList + 1;
+END WHILE;
+
+
+
+
+if (select count(*)>1 from tblVariationProduct) then
+	if not exists (select * from tmpVariationDetails) then
+ 	set p_ResponseStatus='failed';
+ 		set p_OutputMessage=concat('At least one variation type is required to create variation item.');
+ 		leave sp;
+ 	end if;
+end if;
+
+
+
+
+
+
+
+
+
+	
+	
+	end if;
+
+
+	 
+	
+
+
+set noOfStoreIdList_json=JSON_LENGTH(p_storeIdList_json);
+DROP TEMPORARY TABLE IF EXISTS tblStoreIdList;
+  CREATE TEMPORARY TABLE tblStoreIdList (
+    storeId int
+);
+   
+        WHILE i_storeIdListList < noOfStoreIdList_json DO	
+         	 set v_storeId=JSON_UNQUOTE(JSON_EXTRACT(p_storeIdList_json, CONCAT('$[', i_storeIdListList, '].storeId')));
+			
+            INSERT INTO tblStoreIdList(storeId) VALUES (cast (v_storeId as int));
+            
+            SET i_storeIdListList = i_storeIdListList + 1;
+            
+		END WHILE;
+
+	
+	
+	   if(p_isUnique=1) then
+            if (p_isStockTracked=0) then
+				set p_OutputMessage='A unique product must always be a stock-tracked item';
+				set p_ResponseStatus='failed';
+			 	
+				leave sp;
+			end if;
+		end if;
+	
+	
+	     if exists(select * from tblStoreIdList where storeId is null) then
+				set p_OutputMessage='Store can not be null';
+				set p_ResponseStatus='failed';
+				leave sp;
+			end if;
+		
+		IF EXISTS (SELECT storeId FROM tblStoreIdList GROUP BY storeId HAVING COUNT(storeId) > 1
+		) THEN
+   			 SET p_OutputMessage = 'Duplicate storeId values found';
+   			 SET p_ResponseStatus = 'failed';
+   			 LEAVE sp;
+   		END IF;		
+	
+		
+		
+		
+	
+	    START TRANSACTION;
+	
+	        if not exists (select * from tblStoreIdList) then
+				set p_OutputMessage='Atleast one store is requred.';
+				set p_ResponseStatus='failed';
+			rollback;
+				leave sp;
+			end if;
+	   
+
+    IF p_SaveType = 'I' THEN
+    
+    
+ 
+
+   
+
+  
+        
+    if p_productTypeId=2 then
+   
+     
+			if exists(select sku from tblVariationProduct where sku is null or sku='null') then 
+				set p_OutputMessage='SKU is required for v.';
+				set p_ResponseStatus='failed';
+			rollback;
+				leave sp;
+			 end if;		    	  
+		   
+		   
+		   if (select count(sku) from tblVariationProduct) != (select count(distinct sku) from tblVariationProduct) then
+		    set p_ResponseStatus = 'failed';
+		    set p_OutputMessage = 'Duplicate SKUs are not allowed for variations.';
+		   rollback;
+		    leave sp;
+		end if;
+		
+		    
+		    
+
+
+
+SELECT 
+    COUNT(*),
+    GROUP_CONCAT(vp.SKU ORDER BY vp.SKU SEPARATOR ', ')
+INTO  v_skuDupCount, v_dupSkus
+FROM variation_product vp
+WHERE vp.SKU IN (
+    SELECT sku FROM tblVariationProduct
+);
+
+
+IF v_skuDupCount > 0 THEN
+    SET p_ResponseStatus = 'failed';
+    SET p_OutputMessage = CONCAT(
+        'SKU(s) ', v_dupSkus, ' already used in existing products.'
+    );
+
+    ROLLBACK;
+    LEAVE sp;
+END IF;
+
+		
+		
+
+
+	
+
+
+	
+			
+			
+		
+		
+		
+		   
+		   
+		   if (select count(barcode) from tblVariationProduct) != (select count(distinct barcode) from tblVariationProduct) then
+		    set p_ResponseStatus = 'failed';
+		    set p_OutputMessage = 'Duplicate Barcodes are not allowed for variations.';
+		   rollback;
+		    leave sp;
+		end if;
+		
+		    
+		    
+
+SELECT 
+    COUNT(*),
+    GROUP_CONCAT(vp.barcode ORDER BY vp.barcode SEPARATOR ', ')
+INTO  v_barcodeDupCount, v_dupBarcodes
+FROM variation_product vp
+WHERE vp.barcode IN (
+    SELECT barcode FROM tblVariationProduct
+);
+
+
+IF v_barcodeDupCount > 0 THEN
+    SET p_ResponseStatus = 'failed';
+    SET p_OutputMessage = CONCAT(
+        'Barcode(s) ', v_dupBarcodes, ' already used in existing products.'
+    );
+
+    ROLLBACK;
+    LEAVE sp;
+END IF;
+
+
+
+	
+	
+		
+
+
+
+end if;
+    
+  
+
+
+            
+		 if exists (select * from product where ProductName=p_ProductName) then
+				set p_OutputMessage='Product Name already exists';
+				set p_ResponseStatus='failed';
+				rollback;	leave sp;
+			end if;
+
+
+		
+
+        INSERT INTO Product (
+        productId,ProductName, BrandId, MeasurementUnitId,  productTypeId,isProductItem,
+isNotForSelling,imageUrl,isUnique, isExpiringProduct, UserLogId,ModifiedDate_UTC, ModifiedDate_ServerTime,isAssemblyProduct
+        )
+        VALUES (
+			p_tableId,
+            p_ProductName,  p_BrandId, p_MeasurementUnitId,p_productTypeId,p_isProductItem,
+p_isNotForSelling,p_imgUrl,p_isUnique,p_isExpiringProduct,
+           
+p_UserLogID, utc_timestamp(), current_timestamp(),p_isAssemblyProduct );
+
+      set  v_productId=LAST_INSERT_ID();
+     
+    
+
+
+
+      insert into product_category(productId,categoryId,orderId) 
+     select v_productId,categoryId,orderId from tblcategory;
+     
+  
+    
+
+
+
+    
+     if p_productTypeId=2 then
+
+
+set v_totalItems_tblVariationProduct=(select count(*) from tblVariationProduct);
+
+     while (0< v_totalItems_tblVariationProduct) do
+
+   set v_variationProductIdTmp=(select variationProductIdTmp from tblVariationProduct  limit 1);
+set v_sku=(select sku from tblVariationProduct  limit 1);
+set v_barcode=(select barcode from tblVariationProduct  limit 1);
+set v_unitCost=(select unitCost from tblVariationProduct  limit 1);
+set v_unitPrice=(select unitPrice from tblVariationProduct  limit 1);
+set v_taxPerc=(select taxPerc from tblVariationProduct  limit 1);
+
+  
+         if(p_isUnique=1) then
+            if (p_isStockTracked=0) then
+				set p_OutputMessage='A unique product must always be a stock-tracked item';
+				set p_ResponseStatus='failed';
+			 	SIGNAL SQLSTATE '45000'  SET MESSAGE_TEXT = p_OutputMessage;
+				rollback;	leave sp;
+			end if;
+		
+		 	
+		  	
+		  end if;
+		 
+	
+        
+
+insert into variation_product(sku,barcode,productId,unitPrice,unitCost)
+values(v_sku,v_barcode,v_productId,v_unitPrice,v_unitCost);
+
+set v_variationProductId=LAST_INSERT_ID();
+	
+insert into all_product(variationProductId,productTypeId) 
+values (v_variationProductId,p_productTypeId);
+set v_allProductId=LAST_INSERT_ID();
+
+
+
+		 insert into sub_product_detail(allProductId,qty,allProductId_mat) 
+		 select v_allProductId,qty,allProductId_mat from tmpSubProductDetailsForVari where variationProductIdTmp=v_variationProductIdTmp;
+		
+	     select * from tmpSubProductDetailsForVari where variationProductIdTmp=v_variationProductIdTmp;
+
+insert into variation_product_detail(variationProductId,variationTypeId,variationValue)
+select v_variationProductId,variationTypeId,variationValue from tmpVariationDetails where variationProductIdTmp=v_variationProductIdTmp;
+
+
+
+DROP TEMPORARY TABLE IF EXISTS tblStoreIdListCopy;
+CREATE TEMPORARY TABLE tblStoreIdListCopy AS
+SELECT * FROM tblStoreIdList;
+
+
+
+	   set v_totalItems_tblStoreIdList=(select count(*) from tblStoreIdListCopy);
+		       
+		    
+		  while (0< v_totalItems_tblStoreIdList) do
+		
+			  	set v_storeIdTmp=(select storeId from tblStoreIdListCopy  limit 1);
+				set v_inventoryId=null;
+			  
+						
+				if p_isProductItem=true then
+			  	if p_isStockTracked=true then
+		
+			     	insert into inventory(reorderLevel) values(p_ReorderLevel);
+			     	set v_inventoryId=LAST_INSERT_ID();
+			     	         
+			   end if;
+			   end if;
+			  	  
+			  
+			          
+    insert into store_inventory_product(storeId,inventoryId,variationProductId,allProductId) 
+    values(v_storeIdTmp,v_inventoryId,v_variationProductId,v_allProductId);
+			
+   
+   
+			   
+			   delete  from tblStoreIdListCopy limit 1;
+					set v_totalItems_tblStoreIdList=(select count(*) from tblStoreIdListCopy);
+			
+			end while;
+		
+
+
+
+
+
+ 
+
+
+delete  from tblVariationProduct limit 1;
+set v_totalItems_tblVariationProduct=(select count(*) from tblVariationProduct);
+end while;
+     
+     
+   end if;
+  
+
+
+    
+    
+    
+      
+        SET p_ResponseStatus = 'success';
+        SET p_OutputMessage = 'Added Successfully';
+        set p_productId=v_productId;
+        
+    ELSEIF p_SaveType = 'U' THEN
+    
+
+        
+    if p_productTypeId=2 then
+
+
+         if not exists (select * from product where productId=p_tableID and productTypeId=2) then
+				set p_OutputMessage='It is not allowed to change the product type.';
+				set p_ResponseStatus='failed';
+				SIGNAL SQLSTATE '45000'  SET MESSAGE_TEXT = p_OutputMessage;
+				rollback;	leave sp;
+			
+		end if;
+		
+   
+    
+    	if exists(select sku from tblVariationProduct where sku is null or sku='null') then 
+				set p_OutputMessage='SKU is required for v.';
+				set p_ResponseStatus='failed';
+				rollback;	leave sp;
+		end if;		    	  
+		   
+		   
+		if (select count(sku) from tblVariationProduct) != (select count(distinct sku) from tblVariationProduct) then
+		    set p_ResponseStatus = 'failed';
+		    set p_OutputMessage = 'Duplicate SKUs are not allowed for variations.';
+		    rollback;	leave sp;
+		end if;
+    
+
+
+
+select vp.sku as vp,vp.variationProductId as variationProductId_vp,
+tvp.sku as tvp,tvp.variationProductId as variationProductIdTvp from variation_product vp 
+ inner join tblVariationProduct tvp on vp.variationProductId!=tvp.variationProductId and vp.SKU=tvp.sku;
+
+
+
+ set v_skuDupCount=v_skuDupCount+(select count(*) from variation_product vp 
+ inner join tblVariationProduct tvp on vp.variationProductId!=tvp.variationProductId and vp.SKU=tvp.SKU);
+
+
+
+set v_skuDupCount=v_skuDupCount+(select count(*) from serialized_item  
+si inner join store_inventory_product as sip on si.inventoryId=sip.inventoryId 
+inner join product p on sip.singleProductId=p.productId where p.productId!=p_tableID 
+and serialNumber in (select sku from tblVariationProduct));
+
+	if v_skuDupCount>0  then
+		set p_ResponseStatus='failed';
+		set p_OutputMessage=concat('SKU is already used in products v.');
+		
+        
+		rollback;	leave sp;
+	end if;
+
+
+		
+
+
+IF EXISTS (
+    SELECT tmp.barcode
+    FROM tblVariationProduct tmp inner join variation_product vp on tmp.variationProductId=vp.variationProductId 
+    WHERE vp.productId != p_tableID 
+      AND tmp.barcode IS NOT null 
+    GROUP BY tmp.barcode,vp.barcode
+    HAVING COUNT(*) > 1
+) THEN
+    SET p_ResponseStatus = 'failed';
+    SET p_OutputMessage = concat('Duplicate Barcodes are not allowed for variationsoo.');
+    ROLLBACK; LEAVE sp;
+END IF;
+
+
+	
+
+		set v_skuDupCount=v_skuDupCount+(select count(*) from variation_product vp where productId!=p_tableID and
+	barcode in (select barcode from tblVariationProduct where barcode IS NOT null AND barcode != ''));
+  
+
+
+	
+	
+
+		set v_skuDupCount=v_skuDupCount+(select count(*) from serialized_item si inner join 
+		store_inventory_product sip on si.inventoryId=sip.inventoryId 
+		inner join variation_product vp ON sip.variationProductId=vp.variationProductId where vp.productId!=p_tableID and 
+	serialNumber in (select barcode from tblVariationProduct where barcode IS NOT null AND barcode != '' ));
+
+	
+			if v_skuDupCount>0  then
+				set p_ResponseStatus='failed';
+				set p_OutputMessage=concat('Barcode is already used in an other producti.',v_skuDupCount);
+				
+		        
+				rollback;	leave sp;
+			end if;
+		
+
+  
+
+end if;
+    
+
+
+
+
+ 
+    
+	if not exists (select * from product where ProductId=p_tableID) then
+		set p_OutputMessage='Invalid product id';
+        set p_ResponseStatus='failed';
+        rollback;	leave sp;
+	end if;
+    
+
+
+	
+	
+     
+     
+	
+
+	if exists (select * from product where ProductName=p_ProductName and ProductId!=p_tableID) then
+		set p_OutputMessage='Product Name already exists';
+        set p_ResponseStatus='failed';
+        rollback;	leave sp;
+	end if;
+
+
+
+	
+   
+    
+
+
+
+DROP TEMPORARY TABLE IF EXISTS currentCategories;
+CREATE TEMPORARY TABLE currentCategories(categoryId INT);
+
+INSERT INTO currentCategories(categoryId)
+SELECT categoryId FROM product_category WHERE productId = p_tableID;
+
+
+
+DROP TEMPORARY TABLE IF EXISTS categoriesToAdd;
+CREATE TEMPORARY TABLE categoriesToAdd(categoryId INT);
+
+
+DROP TEMPORARY TABLE IF EXISTS categoriesToRemove;
+CREATE TEMPORARY TABLE categoriesToRemove(categoryId INT);
+
+
+INSERT INTO categoriesToAdd(categoryId)
+SELECT t.categoryId FROM tblcategory t
+WHERE NOT EXISTS (SELECT 1 FROM currentCategories c WHERE t.categoryId = c.categoryId);
+
+
+INSERT INTO categoriesToRemove(categoryId)
+SELECT c.categoryId FROM currentCategories c
+WHERE NOT EXISTS (SELECT 1 FROM tblcategory t WHERE t.categoryId = c.categoryId);
+
+
+DELETE FROM product_category
+WHERE productId = p_tableID AND categoryId IN (SELECT categoryId FROM categoriesToRemove);
+
+
+INSERT INTO product_category(productId, categoryId)
+SELECT p_tableID, categoryId FROM categoriesToAdd;
+
+     
+   
+    UPDATE Product
+    SET
+        ProductName = p_ProductName,
+        BrandId = p_BrandId,
+        MeasurementUnitId = p_MeasurementUnitId,
+       
+        isProductItem=p_isProductItem,
+        isNotForSelling = p_isNotForSelling,
+        imageUrl = p_imgUrl,
+        isUnique = p_isUnique,
+        isExpiringProduct=p_isExpiringProduct,
+        ModifiedDate_UTC = utc_timestamp(),
+        ModifiedDate_ServerTime = current_timestamp(),
+        isAssemblyProduct=p_isAssemblyProduct
+    WHERE ProductId = p_tableID;
+       					
+        
+   
+   
+  
+   
+
+     if(p_isUnique=1) then
+    
+      if (p_isStockTracked=0) then
+				set p_OutputMessage='A unique product must always be a stock-tracked item';
+				set p_ResponseStatus='failed';
+				SIGNAL SQLSTATE '45000'  SET MESSAGE_TEXT = p_OutputMessage;
+				rollback;	leave sp;
+			
+			end if;
+		
+	  end if;
+	 
+
+     
+      
+      
+      
+      
+      
+      
+       
+    IF p_productTypeId = 2 then
+    
+
+       
+DROP TEMPORARY TABLE IF EXISTS tblCurrentVariationProducts;
+CREATE TEMPORARY TABLE tblCurrentVariationProducts(variationProductId INT,sku varchar(50),unitCost decimal(10,2),unitPrice decimal(10,2),taxPerc decimal(10,2));
+
+INSERT INTO tblCurrentVariationProducts(variationProductId,sku,unitCost,unitPrice,taxPerc)
+SELECT distinct vp.variationProductId,vp.sku,vp.unitCost,vp.unitPrice,vp.taxPerc FROM variation_product vp where vp.productId = p_tableID;
+
+
+    
+DROP TEMPORARY TABLE IF EXISTS tblVariationProductsAdd;
+CREATE TEMPORARY TABLE tblVariationProductsAdd(variationProductIdTmp INT,sku varchar(50),barcode varchar(50),unitCost decimal(10,2),unitPrice decimal(10,2),taxPerc decimal(10,2));
+
+DROP TEMPORARY TABLE IF EXISTS tblVariationProductsRemove;
+CREATE TEMPORARY TABLE tblVariationProductsRemove(variationProductId INT);
+
+  
+  INSERT INTO tblVariationProductsAdd(variationProductIdTmp,sku,barcode,unitCost,unitPrice,taxPerc)
+SELECT t.variationProductIdTmp,t.sku,t.barcode,t.unitCost,t.unitPrice,t.taxPerc FROM tblVariationProduct t
+WHERE NOT EXISTS (SELECT 1 FROM tblCurrentVariationProducts c WHERE t.variationProductId = c.variationProductId);
+   
+
+INSERT INTO tblVariationProductsRemove(variationProductId)
+SELECT c.variationProductId FROM tblCurrentVariationProducts c
+WHERE NOT EXISTS (SELECT 1 FROM tblVariationProduct t WHERE t.variationProductId = c.variationProductId);
+
+
+
+
+
+DROP TEMPORARY TABLE IF EXISTS tblRemainingVariationProduct;
+
+CREATE TEMPORARY TABLE tblRemainingVariationProduct AS
+SELECT * FROM tblVariationProduct;
+
+DROP TEMPORARY TABLE IF EXISTS tmpRemainingVariationDetails;
+
+
+  
+	 delete from tblRemainingVariationProduct where variationProductIdTmp in (select variationProductIdTmp from tblVariationProductsAdd);
+	delete from tblRemainingVariationProduct where variationProductId in (select variationProductId from tblVariationProductsRemove);
+   
+
+ 
+DROP TEMPORARY TABLE IF EXISTS tmpRemainingVariationDetails;
+CREATE TEMPORARY TABLE tmpRemainingVariationDetails AS
+SELECT * FROM tmpVariationDetails;
+
+
+delete from tmpRemainingVariationDetails where variationProductIdTmp in (select variationProductIdTmp from tblVariationProductsAdd);
+	delete from tmpRemainingVariationDetails where variationProductId in (select variationProductId from tblVariationProductsRemove);
+   
+
+
+
+
+ 
+
+
+
+
+
+
+  
+       
+DROP TEMPORARY TABLE IF EXISTS currentStores;
+CREATE TEMPORARY TABLE currentStores(storeId INT);
+
+
+INSERT INTO currentStores(storeId)
+SELECT distinct storeId FROM store_inventory_product sip inner join variation_product vp on sip.variationProductId=vp.variationProductId
+ WHERE vp.productId = p_tableID;
+
+
+
+DROP TEMPORARY TABLE IF EXISTS storesToAdd;
+CREATE TEMPORARY TABLE storesToAdd(storeId INT);
+
+DROP TEMPORARY TABLE IF EXISTS storesToRemove;
+CREATE TEMPORARY TABLE storesToRemove(storeId INT);
+
+
+INSERT INTO storesToAdd(storeId)
+SELECT t.storeId FROM tblStoreIdList t
+WHERE NOT EXISTS (SELECT 1 FROM currentStores c WHERE t.storeId = c.storeId);
+
+
+INSERT INTO storesToRemove(storeId)
+SELECT c.storeId FROM currentStores c
+WHERE NOT EXISTS (SELECT 1 FROM tblStoreIdList t WHERE t.storeId = c.storeId);
+
+   		     
+		     
+    
+
+
+
+DROP TEMPORARY TABLE IF EXISTS tblRemainingStoreIdList;
+CREATE TEMPORARY TABLE tblRemainingStoreIdList AS
+SELECT storeId FROM tblStoreIdList;
+
+delete from tblRemainingStoreIdList where storeId in (select storeId from storesToAdd);
+delete from tblRemainingStoreIdList where storeId in (select storeId from storesToRemove);
+
+
+
+
+
+	
+
+		
+
+
+SET v_totalItems_tblVariationProduct = (SELECT COUNT(*) FROM tblVariationProductsRemove);
+
+WHILE v_totalItems_tblVariationProduct > 0 DO
+
+    SELECT variationProductId INTO v_variationProductId FROM tblVariationProductsRemove LIMIT 1;
+
+       IF EXISTS (
+        SELECT nsi.inventoryId, COUNT(*) AS record_count 
+        FROM inventory i
+        INNER JOIN store_inventory_product sip ON i.inventoryId = sip.inventoryId
+        INNER JOIN non_serialized_item nsi ON i.inventoryId = nsi.inventoryId
+        WHERE sip.variationProductId= v_variationProductId
+        GROUP BY nsi.inventoryId 
+        HAVING COUNT(*) > 1
+    ) THEN
+        SET p_OutputMessage = 'You cannot remove this variation because this product already has inventory transactions';
+        SET p_ResponseStatus = 'failed';
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = p_OutputMessage;
+        rollback;	leave sp;		
+ 
+	end if;
+
+
+	DROP TEMPORARY TABLE IF EXISTS tblStoreIdList2;
+   	CREATE TEMPORARY TABLE tblStoreIdList2 as SELECT * from tblStoreIdList;
+  
+
+    SET v_totalItems_tblStoreIdList = (SELECT COUNT(*) FROM tblStoreIdList2);
+
+    WHILE v_totalItems_tblStoreIdList > 0 DO
+
+        
+        SET v_storeIdTmp = (SELECT storeId FROM tblStoreIdList2 LIMIT 1);
+        SET v_inventoryId =(select inventoryId from store_inventory_product where storeId=v_storeIdTmp
+       and variationProductId=v_variationProductId);
+
+      
+ 	 	DELETE nsi FROM non_serialized_item nsi where inventoryId=v_inventoryId;
+ 	 	
+ 	 DELETE sip FROM store_inventory_product sip 
+ 	where storeId=v_storeIdTmp and sip.variationProductId=v_variationProductId;
+    
+      DELETE i FROM inventory i where inventoryId=v_inventoryId;
+     
+  
+        delete from variation_product_detail where variationProductId=v_variationProductId;
+              
+      DELETE spd FROM sub_product_detail spd INNER JOIN all_product ap  
+      ON spd.allProductId = ap.allProductId WHERE ap.variationProductId = v_variationProductId;
+
+        
+         delete from all_product where variationProductId=v_variationProductId;
+      delete from variation_product where variationProductId=v_variationProductId;
+    
+
+        DELETE FROM tblStoreIdList2 LIMIT 1;
+        SET v_totalItems_tblStoreIdList = (SELECT COUNT(*) FROM tblStoreIdList2);
+
+    END WHILE;
+
+    
+    DELETE FROM tblVariationProductsRemove LIMIT 1;
+    SET v_totalItems_tblVariationProduct = (SELECT COUNT(*) FROM tblVariationProductsRemove);
+
+END WHILE;
+
+
+
+	
+	
+
+
+SET v_totalItems_tblVariationProduct = (SELECT COUNT(*) FROM tblVariationProductsAdd);
+
+WHILE v_totalItems_tblVariationProduct > 0 DO
+
+    SELECT variationProductIdTmp, sku, barcode,unitCost,unitPrice,taxPerc  
+    INTO v_variationProductIdTmp, v_sku, v_barcode,v_unitCost,v_unitPrice,v_taxPerc 
+   	FROM tblVariationProductsAdd LIMIT 1;
+
+    INSERT INTO variation_product (sku, barcode, productId,unitCost,unitPrice,taxPerc) 
+    VALUES (v_sku, v_barcode, p_tableId,v_unitCost,v_unitPrice,v_taxPerc);
+
+    SET v_variationProductId_new = LAST_INSERT_ID();
+   
+
+    
+    INSERT INTO variation_product_detail (variationProductId, variationTypeId, variationValue)
+    SELECT v_variationProductId_new, variationTypeId, variationValue
+    FROM tmpVariationDetails
+    WHERE variationProductIdTmp = v_variationProductIdTmp;
+
+    
+    insert into all_product(variationProductId,productTypeId) values (v_variationProductId_new,p_productTypeId);
+set v_allProductId=LAST_INSERT_ID();
+   
+
+	 insert into sub_product_detail(allProductId,qty,allProductId_mat) 
+		 select v_allProductId,qty,allProductId_mat from tmpSubProductDetailsForVari where variationProductIdTmp=v_variationProductIdTmp;
+		
+
+
+   	DROP TEMPORARY TABLE IF EXISTS tblStoreIdList2;
+   	CREATE TEMPORARY TABLE tblStoreIdList2 as SELECT * from tblStoreIdList;
+
+    SET v_totalItems_tblStoreIdList = (SELECT COUNT(*) FROM tblStoreIdList2);
+
+    WHILE v_totalItems_tblStoreIdList > 0 DO
+
+        SET v_storeIdTmp = (SELECT storeId FROM tblStoreIdList2 LIMIT 1);
+        SET v_inventoryId = NULL;
+
+        IF p_isStockTracked THEN
+            INSERT INTO inventory (reorderLevel) 
+            VALUES (p_ReorderLevel);
+            SET v_inventoryId = LAST_INSERT_ID();
+        END IF;
+
+        
+        INSERT INTO store_inventory_product (storeId, inventoryId, variationProductId,allProductId) 
+        VALUES (v_storeIdTmp, v_inventoryId, v_variationProductId_new,v_allProductId);
+
+        
+        DELETE FROM tblStoreIdList2 LIMIT 1;
+        SET v_totalItems_tblStoreIdList = (SELECT COUNT(*) FROM tblStoreIdList2);
+
+    END WHILE;
+
+    
+    DELETE FROM tblVariationProductsAdd LIMIT 1;
+    SET v_totalItems_tblVariationProduct = (SELECT COUNT(*) FROM tblVariationProductsAdd);
+
+END WHILE;
+
+		
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	
+
+
+ DROP TEMPORARY TABLE IF EXISTS tblCurrentSubProductDetailsForVari;
+ CREATE TEMPORARY TABLE tblCurrentSubProductDetailsForVari(qty decimal(10,2),allProductId_mat int);
+
+
+DROP TEMPORARY TABLE IF EXISTS tblSubProductDetailsForVariAdd;
+CREATE TEMPORARY TABLE tblSubProductDetailsForVariAdd(qty decimal(10,2),allProductId_mat int);
+
+DROP TEMPORARY TABLE IF EXISTS tblSubProductDetailsForVariRemove;
+CREATE TEMPORARY TABLE tblSubProductDetailsForVariRemove(allProductId_mat int);
+
+
+SET v_totalItems_tblVariationProduct = (SELECT COUNT(*) FROM tblRemainingVariationProduct);
+
+WHILE v_totalItems_tblVariationProduct > 0 DO
+
+
+    SELECT variationProductId, sku, barcode,unitCost,unitPrice,taxPerc
+    INTO v_variationProductId, v_sku, v_barcode,v_unitCost,v_unitPrice,v_taxPerc 
+    FROM tblRemainingVariationProduct LIMIT 1;
+   
+
+ 
+
+
+
+
+
+
+
+    set v_allProductId_sv=(select allProductId from all_product where variationProductId=v_variationProductId);
+    
+    
+    
+    
+
+  
+  
+  if(p_isAssemblyProduct=true) then
+    
+    call _validateProductIsUsedAsASubProductOfAnotherProduct(v_allProductId_sv,@isTheProductUsedAsASubProductInAnotherValidated,@skus);
+  	if @isTheProductUsedAsASubProductInAnotherValidated=false then
+  	     
+  	 set p_ResponseStatus='failed';
+  	 set p_OutputMessage= CONCAT('This product cannot be updated as an assembly product because it is already used as a sub-product in other SKU(s): ', @skus);
+      
+  	rollback;
+    leave sp;
+  	end if;
+  	
+  end if;
+    
+         if(p_isStockTracked=false) then
+  
+       call _validateProductIsUsedAsASubProductOfAnotherProduct(v_allProductId_sv,@isTheProductUsedAsASubProductInAnotherValidated,@skus);
+  	if @isTheProductUsedAsASubProductInAnotherValidated=false then
+  	     
+  	 set p_ResponseStatus='failed';
+  		 set p_OutputMessage= CONCAT('This product must be stock-tracked because it is already used as a sub-product in other SKU(s): ', @skus);   
+		  
+  	rollback;
+    leave sp;
+  	end if;
+  	
+  end if;
+    
+ 
+    
+
+
+ delete from tblCurrentSubProductDetailsForVari;
+ delete from tblSubProductDetailsForVariAdd;
+delete from tblSubProductDetailsForVariRemove;
+ 
+ INSERT INTO tblCurrentSubProductDetailsForVari(qty,allProductId_mat)
+SELECT distinct spd.qty,spd.allProductId_mat FROM sub_product_detail spd where spd.allProductId = v_allProductId_sv;
+
+  
+  INSERT INTO tblSubProductDetailsForVariAdd(qty,allProductId_mat)
+SELECT t.qty,t.allProductId_mat FROM tmpSubProductDetailsForVari t
+where t.variationProductId=v_variationProductId and NOT EXISTS (SELECT 1 FROM tblCurrentSubProductDetailsForVari c 
+				where  t.allProductId_mat=c.allProductId_mat);
+    
+
+INSERT INTO tblSubProductDetailsForVariRemove(allProductId_mat)
+ SELECT c.allProductId_mat FROM tblCurrentSubProductDetailsForVari c
+ WHERE NOT EXISTS (SELECT 1 FROM tmpSubProductDetailsForVari t WHERE t.variationProductId = v_variationProductId and t.allProductId_mat=c.allProductId_mat);
+
+
+select * from tblSubProductDetailsForVariRemove;
+
+
+
+
+ DROP TEMPORARY TABLE IF EXISTS tblSubProductsDetailsRemainingVari;
+
+ CREATE TEMPORARY TABLE tblSubProductsDetailsRemainingVari AS
+ SELECT * FROM tmpSubProductDetailsForVari where variationProductId=v_variationProductId;
+ 
+  
+	 delete from tblSubProductsDetailsRemainingVari 
+	 where allProductId_mat in (select allProductId_mat from tblSubProductDetailsForVariAdd);
+	 
+ 	delete from tblSubProductsDetailsRemainingVari 
+ 	where allProductId_mat in (select allProductId_mat from tblSubProductDetailsForVariRemove);
+
+
+ 	
+insert into sub_product_detail (allProductId,qty,allProductId_mat)
+select v_allProductId_sv,qty,allProductId_mat from tblSubProductDetailsForVariAdd;
+
+DELETE spd FROM sub_product_detail spd
+INNER JOIN tblSubProductDetailsForVariRemove spda ON spd.allProductId_mat = spda.allProductId_mat
+WHERE spd.allProductId = v_allProductId_sv;
+
+ 
+UPDATE sub_product_detail spd
+INNER JOIN tblSubProductsDetailsRemainingVari spdrem ON spd.allProductId_mat = spdrem.allProductId_mat
+SET spd.qty = spdrem.qty WHERE spd.allProductId = v_allProductId_sv;
+
+
+
+
+
+
+
+
+
+update variation_product set sku=v_sku,barcode=v_barcode,unitPrice=v_unitPrice,
+ unitCost=v_unitCost,taxPerc=v_taxPerc where variationProductId=v_variationProductId;
+   
+UPDATE variation_product_detail tvd INNER JOIN tmpVariationDetails vpd 
+    ON tvd.variationProductId = vpd.variationProductId  AND tvd.variationTypeId = vpd.variationTypeId
+SET tvd.variationValue = vpd.variationValue
+WHERE tvd.variationProductId = v_variationProductId AND tvd.variationValue != vpd.variationValue;
+
+set v_allProductId=(select ap.allProductId from all_product ap 
+   inner join variation_product vp on ap.variationProductId=vp.variationProductId
+where vp.variationProductId=v_variationProductId);
+ 
+   INSERT INTO variation_product_detail(variationProductId, variationTypeId, variationValue)
+ SELECT  v_variationProductId,tvd.variationTypeId,  tvd.variationValue 
+FROM tmpVariationDetails tvd LEFT JOIN 
+    variation_product_detail vpd ON 
+    tvd.variationProductId = vpd.variationProductId 
+    AND tvd.variationTypeId = vpd.variationTypeId 
+    AND tvd.variationValue = vpd.variationValue
+   WHERE tvd.variationProductId=v_variationProductId and vpd.variationProductId IS NULL;
+  
+  
+   DELETE tvd FROM variation_product_detail tvd
+	LEFT JOIN tmpVariationDetails vpd  ON tvd.variationProductId = vpd.variationProductId
+    AND tvd.variationTypeId = vpd.variationTypeId AND tvd.variationValue = vpd.variationValue
+WHERE tvd.variationProductId = v_variationProductId AND vpd.variationProductId IS NULL;
+
+   	
+
+
+		DROP TEMPORARY TABLE IF EXISTS storesToAdd2;
+		CREATE TEMPORARY TABLE storesToAdd2 as SELECT * from storesToAdd;
+  
+    SET v_totalItems_tblStoreIdList = (SELECT COUNT(*) FROM storesToAdd2);
+
+    WHILE v_totalItems_tblStoreIdList > 0 DO
+    
+        SET v_storeIdTmp = (SELECT storeId FROM storesToAdd2 LIMIT 1);
+        SET v_inventoryId = NULL;
+
+        IF p_isStockTracked THEN
+            INSERT INTO inventory (reorderLevel) VALUES (p_ReorderLevel);
+            SET v_inventoryId = LAST_INSERT_ID();
+        END IF;
+
+        INSERT INTO store_inventory_product (storeId, inventoryId, variationProductId,allProductId) 
+        VALUES (v_storeIdTmp, v_inventoryId, v_variationProductId,v_allProductId);
+
+        DELETE FROM storesToAdd2 LIMIT 1;
+        SET v_totalItems_tblStoreIdList = (SELECT COUNT(*) FROM storesToAdd2);
+
+    END WHILE;
+   
+   		DROP TEMPORARY TABLE IF EXISTS storesToRemove2;
+   		CREATE TEMPORARY TABLE storesToRemove2 as SELECT * from storesToRemove;
+  
+    SET v_totalItems_tblStoreIdList = (SELECT COUNT(*) FROM storesToRemove2);
+
+    
+   
+    
+    WHILE v_totalItems_tblStoreIdList > 0 DO
+        SET v_storeIdTmp = (SELECT storeId FROM storesToRemove2 LIMIT 1);
+        SET v_inventoryId = (SELECT inventoryId FROM store_inventory_product 
+                             WHERE variationProductId = v_variationProductId AND storeId = v_storeIdTmp);
+
+                      
+        IF v_inventoryId IS NOT NULL then
+      
+            IF EXISTS (
+                SELECT nsi.inventoryId, COUNT(*) AS record_count 
+                FROM inventory i
+                INNER JOIN store_inventory_product sip ON i.inventoryId = sip.inventoryId
+                INNER JOIN non_serialized_item nsi ON i.inventoryId = nsi.inventoryId
+                WHERE sip.variationProductId = v_variationProductId 
+                  AND storeId = v_storeIdTmp
+                GROUP BY nsi.inventoryId 
+                HAVING COUNT(*) > 1
+            ) THEN
+                SET p_OutputMessage = 'You cannot remove this variation because this product already has inventory transactions';
+                SET p_ResponseStatus = 'failed';
+                SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = p_OutputMessage;
+                rollback;	leave sp;
+            END IF;
+
+            
+            DELETE nsi 
+            FROM non_serialized_item nsi
+            INNER JOIN inventory i ON nsi.inventoryId = i.inventoryId
+            INNER JOIN store_inventory_product sip ON i.inventoryId = sip.inventoryId
+            WHERE sip.inventoryId = v_inventoryId;
+
+        
+            DELETE FROM store_inventory_product WHERE inventoryId = v_inventoryId;
+
+            DELETE FROM inventory WHERE inventoryId = v_inventoryId;
+           
+           else
+                DELETE FROM store_inventory_product WHERE variationProductId = v_variationProductId AND storeId = v_storeIdTmp;
+
+        END IF;
+
+        DELETE FROM storesToRemove2 LIMIT 1;
+        SET v_totalItems_tblStoreIdList = (SELECT COUNT(*) FROM storesToRemove2);
+
+    END WHILE;
+ 
+
+   
+   	DROP TEMPORARY TABLE IF EXISTS tblRemainingStoreIdList2;
+		CREATE TEMPORARY TABLE tblRemainingStoreIdList2 as SELECT * from tblRemainingStoreIdList;
+
+    SET v_totalItems_tblStoreIdList = (SELECT COUNT(*) FROM tblRemainingStoreIdList2);
+	
+    WHILE v_totalItems_tblStoreIdList > 0 DO
+    
+        SET v_storeIdTmp = (SELECT storeId FROM tblRemainingStoreIdList2 LIMIT 1);
+       
+      
+      if not exists(select * from store_inventory_product 
+      WHERE variationProductId = v_variationProductId AND storeId = v_storeIdTmp ) then 
+      
+       	select 'hello store_inventory_product table not exists and created the record into it.';
+         insert into store_inventory_product(storeId,inventoryId,variationProductId) 
+					values(v_storeIdTmp,null,v_variationProductId);  
+				
+      end if;
+       
+      
+       
+        SET v_inventoryId = (SELECT inventoryId FROM store_inventory_product 
+                             WHERE variationProductId = v_variationProductId AND storeId = v_storeIdTmp);
+                    
+     
+                            
+        IF p_isStockTracked then
+          IF v_inventoryId IS NULL THEN
+
+            INSERT INTO inventory (reorderLevel) VALUES (p_ReorderLevel);
+            SET v_inventoryId = LAST_INSERT_ID();
+          
+          end if;
+        
+            update store_inventory_product set inventoryId=v_inventoryId
+            WHERE storeId=v_storeIdTmp and variationProductId=v_variationProductId;
+ 
+          ELSE
+        
+         IF v_inventoryId IS NOT NULL THEN
+
+            IF EXISTS (
+                SELECT nsi.inventoryId, COUNT(*) AS record_count 
+                FROM inventory i
+                INNER JOIN store_inventory_product sip ON i.inventoryId = sip.inventoryId
+                INNER JOIN non_serialized_item nsi ON i.inventoryId = nsi.inventoryId
+                WHERE sip.variationProductId = v_variationProductId 
+                  AND storeId = v_storeIdTmp
+                GROUP BY nsi.inventoryId 
+                HAVING COUNT(*) > 1
+            ) THEN
+                SET p_OutputMessage = 'You cannot remove this variation because this product already has inventory transactions';
+                SET p_ResponseStatus = 'failed';
+                SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = p_OutputMessage;
+                rollback;	leave sp;
+            END IF;
+           
+            DELETE nsi 
+            FROM non_serialized_item nsi
+            INNER JOIN inventory i ON nsi.inventoryId = i.inventoryId
+            INNER JOIN store_inventory_product sip ON i.inventoryId = sip.inventoryId
+            WHERE sip.inventoryId = v_inventoryId;
+
+            update store_inventory_product set inventoryId=null WHERE inventoryId = v_inventoryId;
+
+            DELETE FROM inventory where inventoryId = v_inventoryId;
+           
+          end if;
+        	
+  		END IF;
+   
+        DELETE FROM tblRemainingStoreIdList2 LIMIT 1;
+        SET v_totalItems_tblStoreIdList = (SELECT COUNT(*) FROM tblRemainingStoreIdList2);
+
+    END WHILE;
+   
+
+    DELETE FROM tblRemainingVariationProduct LIMIT 1;
+
+    SET v_totalItems_tblVariationProduct = (SELECT COUNT(*) FROM tblRemainingVariationProduct);
+
+END WHILE;
+    		
+
+
+       end if; 
+
+
+ 
+   
+		  
+		
+		
+         
+		SET p_ResponseStatus = 'success';
+        SET p_OutputMessage = 'Updated Successfully.';
+
+    END IF;
+    
+   
+      COMMIT;
+     
+    if(p_tableID is not null) then  SET p_productId=p_tableID; end if;
+    
+ 
+    
+END ;;
+DELIMITER ;
+/*!50003 SET sql_mode              = @saved_sql_mode */ ;
+/*!50003 SET character_set_client  = @saved_cs_client */ ;
+/*!50003 SET character_set_results = @saved_cs_results */ ;
+/*!50003 SET collation_connection  = @saved_col_connection */ ;
+/*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
+/*!50003 SET sql_mode              = 'IGNORE_SPACE,STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION' */ ;
+/*!50003 DROP PROCEDURE IF EXISTS `Product_Insert_Update_old` */;
+/*!50003 SET @saved_cs_client      = @@character_set_client */ ;
+/*!50003 SET @saved_cs_results     = @@character_set_results */ ;
+/*!50003 SET @saved_col_connection = @@collation_connection */ ;
+/*!50003 SET character_set_client  = utf8mb4 */ ;
+/*!50003 SET character_set_results = utf8mb4 */ ;
+/*!50003 SET collation_connection  = utf8mb4_general_ci */ ;
+DELIMITER ;;
+CREATE DEFINER=`root`@`localhost` PROCEDURE `Product_Insert_Update_old`(
+    IN p_tableID INT,
+    IN p_storeIdList_json json,
     IN p_ProductNo VARCHAR(100),
 	IN p_isProductNoAutoGenerate VARCHAR(100),
     IN p_ProductName VARCHAR(500),
@@ -10612,84 +12322,141 @@ DELIMITER ;
 /*!50003 SET collation_connection  = utf8mb4_general_ci */ ;
 DELIMITER ;;
 CREATE DEFINER=`root`@`localhost` PROCEDURE `Product_Select`(
-    IN p_ProductId INT,
-    IN p_ProductNo VARCHAR(100),
-    IN p_ProductName VARCHAR(500),
+    IN p_ProductId          INT,
+    IN p_ProductNo          VARCHAR(100),
+    IN p_ProductName        VARCHAR(500),
     IN p_ProductDescription VARCHAR(500),
-    IN p_sku VARCHAR(100),
-    IN p_Barcode VARCHAR(100),
-    IN p_CategoryId INT,
-    IN p_BrandId INT,
-    IN p_StoreId INT,
-    IN p_ProductTypeIds JSON,
-    IN p_isProductItem BIT,
-    IN p_MeasurementUnitId INT,
+    IN p_sku                VARCHAR(100),
+    IN p_Barcode            VARCHAR(100),
+    IN p_CategoryId         INT,
+    IN p_BrandId            INT,
+    IN p_StoreId            INT,
+    IN p_ProductTypeIds     JSON,
+    IN p_isProductItem      BIT,
+    IN p_MeasurementUnitId  INT,
     IN p_allSearchableFields VARCHAR(100),
-    IN p_SearchByKeyword BIT,
-    IN p_Skip INT,
-    IN p_Limit INT,
-    IN p_UserLogID INT,
-    IN p_UTC_Offset VARCHAR(50),
-    IN p_PageName VARCHAR(50),
-    OUT p_ResponseStatus VARCHAR(50),
-    OUT p_OutputMessage VARCHAR(1000),
-    OUT p_TotalRows INT
+    IN p_SearchByKeyword    BIT,
+    IN p_Skip               INT,
+    IN p_Limit              INT,
+    IN p_UserLogID          INT,
+    IN p_UTC_Offset         VARCHAR(50),
+    IN p_PageName           VARCHAR(50),
+    OUT p_ResponseStatus    VARCHAR(50),
+    OUT p_OutputMessage     VARCHAR(1000),
+    OUT p_TotalRows         INT
 )
 sp: BEGIN
-
-    DECLARE _query LONGTEXT;
-    DECLARE _PagingQuery VARCHAR(1000);
-    DECLARE _filter LONGTEXT;
+    DECLARE _query          VARCHAR(10000);
+    DECLARE _PagingQuery    VARCHAR(1000);
+    DECLARE _filter         VARCHAR(2000);
     DECLARE _jsonProductTypeId INT;
     DECLARE _productTypeCondition VARCHAR(1000);
-    DECLARE _index INT DEFAULT 0;
-    DECLARE _jsonLength INT;
-    DECLARE _normalizedProductName VARCHAR(500);
+    DECLARE _index          INT DEFAULT 0;
+    DECLARE _jsonLength     INT;
+    DECLARE _normalizedProductName        VARCHAR(500);
     DECLARE _normalizedProductDescription VARCHAR(500);
-    DECLARE _keyword VARCHAR(100);
-    DECLARE _pos INT DEFAULT 1;
-    DECLARE _len INT;
-    DECLARE _filter_words LONGTEXT;
+    DECLARE _keyword        VARCHAR(100);
+    DECLARE _pos            INT DEFAULT 1;
+    DECLARE _len            INT;
+    DECLARE _filter_words   VARCHAR(2000);
 
     
     IF p_StoreId IS NULL THEN
         SET p_ResponseStatus = 'invalid';
-        SET p_OutputMessage = 'p_StoreId is required.';
+        SET p_OutputMessage  = 'p_StoreId is required.';
         LEAVE sp;
     END IF;
 
     IF p_Skip IS NULL THEN
         SET p_ResponseStatus = 'invalid';
-        SET p_OutputMessage = 'p_Skip should not be null.';
+        SET p_OutputMessage  = 'The p_Skip parameter should not be null.';
         LEAVE sp;
     END IF;
 
     IF p_Limit IS NULL OR p_Limit > 500 THEN
         SET p_ResponseStatus = 'invalid';
-        SET p_OutputMessage = 'p_Limit should be <= 500.';
+        SET p_OutputMessage  = 'The p_Limit parameter should not be null and ≤ 500.';
         LEAVE sp;
     END IF;
 
     SET _PagingQuery = CONCAT(' LIMIT ', p_Skip, ', ', p_Limit);
-    SET _filter = CONCAT(' WHERE 1=1 AND sip.StoreId = ', p_StoreId);
 
     
-    SET _normalizedProductName =
-        IFNULL(LOWER(TRIM(REGEXP_REPLACE(p_ProductName, '\\s+', ' '))), NULL);
+    SET _filter = CONCAT(' WHERE sip.StoreId = ', p_StoreId);
 
-    SET _normalizedProductDescription =
-        IFNULL(LOWER(TRIM(REGEXP_REPLACE(p_ProductDescription, '\\s+', ' '))), NULL);
+    
+    SET _normalizedProductName = IFNULL(LOWER(TRIM(REGEXP_REPLACE(p_ProductName, '\s+', ' '))), NULL);
+    SET _normalizedProductDescription = IFNULL(LOWER(TRIM(REGEXP_REPLACE(p_ProductDescription, '\s+', ' '))), NULL);
 
+    
+    
     
     IF p_SearchByKeyword = 0 THEN
 
         IF p_ProductId IS NOT NULL THEN
-            SET _filter = CONCAT(_filter, ' AND p.ProductId = ', p_ProductId);
+            SET _filter = CONCAT(_filter, ' AND p.ProductID = ', p_ProductId);
+        END IF;
+
+        
+        IF _normalizedProductName IS NOT NULL AND _normalizedProductName != '' THEN
+            SET _filter_words = '';
+            SET _pos = 1;
+            SET _len = LENGTH(_normalizedProductName);
+
+            WHILE _pos <= _len DO
+                SET _keyword = SUBSTRING_INDEX(SUBSTRING(_normalizedProductName, _pos), ' ', 1);
+                IF _keyword != '' THEN
+                    IF _filter_words = '' THEN
+                        SET _filter_words = CONCAT('LOWER(p.ProductName) LIKE ''%', _keyword, '%''');
+                    ELSE
+                        SET _filter_words = CONCAT(_filter_words, ' AND LOWER(p.ProductName) LIKE ''%', _keyword, '%''');
+                    END IF;
+                END IF;
+                SET _pos = _pos + LENGTH(_keyword) + 1;
+            END WHILE;
+
+            IF _filter_words != '' THEN
+                SET _filter = CONCAT(_filter, ' AND (', _filter_words, ')');
+            END IF;
+        END IF;
+
+        
+        IF _normalizedProductDescription IS NOT NULL AND _normalizedProductDescription != '' THEN
+            SET _filter_words = '';
+            SET _pos = 1;
+            SET _len = LENGTH(_normalizedProductDescription);
+
+            WHILE _pos <= _len DO
+                SET _keyword = SUBSTRING_INDEX(SUBSTRING(_normalizedProductDescription, _pos), ' ', 1);
+                IF _keyword != '' THEN
+                    IF _filter_words = '' THEN
+                        SET _filter_words = CONCAT(
+                            'LOWER(CONCAT(p.productName, " ", ',
+                            'IFNULL((SELECT GROUP_CONCAT(DISTINCT vpd.variationValue SEPARATOR " ") ',
+                            'FROM variation_product_detail vpd ',
+                            'WHERE vpd.variationProductId = vp.variationProductId), ""))) ',
+                            'LIKE ''%', _keyword, '%'''
+                        );
+                    ELSE
+                        SET _filter_words = CONCAT(_filter_words,
+                            ' AND LOWER(CONCAT(p.productName, " ", ',
+                            'IFNULL((SELECT GROUP_CONCAT(DISTINCT vpd.variationValue SEPARATOR " ") ',
+                            'FROM variation_product_detail vpd ',
+                            'WHERE vpd.variationProductId = vp.variationProductId), ""))) ',
+                            'LIKE ''%', _keyword, '%'''
+                        );
+                    END IF;
+                END IF;
+                SET _pos = _pos + LENGTH(_keyword) + 1;
+            END WHILE;
+
+            IF _filter_words != '' THEN
+                SET _filter = CONCAT(_filter, ' AND (', _filter_words, ')');
+            END IF;
         END IF;
 
         IF p_ProductNo IS NOT NULL THEN
-            SET _filter = CONCAT(_filter,
-                ' AND LOWER(p.ProductNo) LIKE ''%', LOWER(TRIM(p_ProductNo)), '%''');
+            SET _filter = CONCAT(_filter, ' AND LOWER(p.ProductNo) LIKE ''%', LOWER(TRIM(p_ProductNo)), '%''');
         END IF;
 
         IF p_sku IS NOT NULL THEN
@@ -10697,27 +12464,11 @@ sp: BEGIN
         END IF;
 
         IF p_Barcode IS NOT NULL THEN
-            SET _filter = CONCAT(_filter,
-                ' AND vp.barcode LIKE ''%', p_Barcode, '%''');
+            SET _filter = CONCAT(_filter, ' AND vp.barcode LIKE ''%', p_Barcode, '%''');
         END IF;
 
         IF p_BrandId IS NOT NULL THEN
             SET _filter = CONCAT(_filter, ' AND p.BrandId = ', p_BrandId);
-        END IF;
-
-        IF p_isProductItem = TRUE THEN
-            SET _filter = CONCAT(_filter,
-                ' AND p.isProductItem = ', CAST(p_isProductItem AS UNSIGNED));
-        END IF;
-
-        IF p_CategoryId IS NOT NULL AND p_CategoryId <> -1 THEN
-            SET _filter = CONCAT(_filter,
-                ' AND mpc.CategoryId = ', p_CategoryId);
-        END IF;
-
-        IF p_MeasurementUnitId IS NOT NULL AND p_MeasurementUnitId <> -1 THEN
-            SET _filter = CONCAT(_filter,
-                ' AND p.MeasurementUnitId = ', p_MeasurementUnitId);
         END IF;
 
         
@@ -10726,90 +12477,156 @@ sp: BEGIN
         SET _index = 0;
 
         WHILE _index < _jsonLength DO
-            SET _jsonProductTypeId =
-                JSON_UNQUOTE(JSON_EXTRACT(p_ProductTypeIds, CONCAT('$[', _index, ']')));
-            SET _productTypeCondition =
-                IF(_productTypeCondition = '',
-                   CONCAT('p.ProductTypeId = ', _jsonProductTypeId),
-                   CONCAT(_productTypeCondition, ' OR p.ProductTypeId = ', _jsonProductTypeId));
+            SET _jsonProductTypeId = JSON_UNQUOTE(JSON_EXTRACT(p_ProductTypeIds, CONCAT('$[', _index, ']')));
+            IF _index = 0 THEN
+                SET _productTypeCondition = CONCAT('p.ProductTypeId = ', _jsonProductTypeId);
+            ELSE
+                SET _productTypeCondition = CONCAT(_productTypeCondition, ' OR p.ProductTypeId = ', _jsonProductTypeId);
+            END IF;
             SET _index = _index + 1;
         END WHILE;
 
-        IF _productTypeCondition <> '' THEN
+        IF _productTypeCondition != '' THEN
             SET _filter = CONCAT(_filter, ' AND (', _productTypeCondition, ')');
+        END IF;
+
+        IF p_isProductItem = 1 THEN
+            SET _filter = CONCAT(_filter, ' AND p.isProductItem = 1');
+        END IF;
+
+        IF p_CategoryId IS NOT NULL AND p_CategoryId <> -1 THEN
+            SET _filter = CONCAT(_filter, ' AND mpc.CategoryId = ', p_CategoryId);
+        END IF;
+
+        IF p_MeasurementUnitId IS NOT NULL AND p_MeasurementUnitId <> -1 THEN
+            SET _filter = CONCAT(_filter, ' AND p.MeasurementUnitId = ', p_MeasurementUnitId);
+        END IF;
+
+    
+    
+    
+    ELSE
+
+        IF p_ProductId IS NOT NULL THEN
+            SET p_ResponseStatus = 'invalid';
+            SET p_OutputMessage  = 'ProductID is not supported for keyword search.';
+            LEAVE sp;
+        END IF;
+
+        IF p_CategoryId IS NOT NULL THEN
+            SET p_ResponseStatus = 'invalid';
+            SET p_OutputMessage  = 'CategoryId is not supported for keyword search.';
+            LEAVE sp;
+        END IF;
+
+        
+        
+        IF _normalizedProductName IS NOT NULL AND _normalizedProductName != '' THEN
+            SET _filter_words = '';
+            SET _pos = 1;
+            SET _len = LENGTH(_normalizedProductName);
+
+            WHILE _pos <= _len DO
+                SET _keyword = SUBSTRING_INDEX(SUBSTRING(_normalizedProductName, _pos), ' ', 1);
+                IF _keyword != '' THEN
+                    SET _filter_words = IF(_filter_words = '',
+                        CONCAT('LOWER(p.ProductName) LIKE ''%', _keyword, '%'''),
+                        CONCAT(_filter_words, ' AND LOWER(p.ProductName) LIKE ''%', _keyword, '%''')
+                    );
+                END IF;
+                SET _pos = _pos + LENGTH(_keyword) + 1;
+            END WHILE;
+
+            IF _filter_words != '' THEN
+                SET _filter = CONCAT(_filter, ' AND (', _filter_words, ')');
+            END IF;
+        END IF;
+
+        
+        IF _normalizedProductDescription IS NOT NULL AND _normalizedProductDescription != '' THEN
+            SET _filter_words = '';
+            SET _pos = 1;
+            SET _len = LENGTH(_normalizedProductDescription);
+
+            WHILE _pos <= _len DO
+                SET _keyword = SUBSTRING_INDEX(SUBSTRING(_normalizedProductDescription, _pos), ' ', 1);
+                IF _keyword != '' THEN
+                    SET _filter_words = IF(_filter_words = '',
+                        CONCAT('LOWER(CONCAT(p.productName, " ", IFNULL((SELECT GROUP_CONCAT(DISTINCT vpd.variationValue SEPARATOR " ") FROM variation_product_detail vpd WHERE vpd.variationProductId = vp.variationProductId), ""))) LIKE ''%', _keyword, '%'''),
+                        CONCAT(_filter_words, ' AND LOWER(CONCAT(p.productName, " ", IFNULL((SELECT GROUP_CONCAT(DISTINCT vpd.variationValue SEPARATOR " ") FROM variation_product_detail vpd WHERE vpd.variationProductId = vp.variationProductId), ""))) LIKE ''%', _keyword, '%''')
+                    );
+                END IF;
+                SET _pos = _pos + LENGTH(_keyword) + 1;
+            END WHILE;
+
+            IF _filter_words != '' THEN
+                SET _filter = CONCAT(_filter, ' AND (', _filter_words, ')');
+            END IF;
+        END IF;
+
+        IF p_ProductNo IS NOT NULL THEN
+            SET _filter = CONCAT(_filter, ' AND LOWER(p.ProductNo) LIKE ''%', LOWER(TRIM(p_ProductNo)), '%''');
+        END IF;
+
+        IF p_Barcode IS NOT NULL THEN
+            SET _filter = CONCAT(_filter, ' AND LOWER(vp.barcode) LIKE ''%', LOWER(p_Barcode), '%''');
+        END IF;
+
+        IF p_allSearchableFields IS NOT NULL AND p_allSearchableFields != '' THEN
+            SET _filter = CONCAT(_filter, ' AND (',
+                'LOWER(p.ProductName) LIKE ''%', LOWER(TRIM(p_allSearchableFields)), '%'' OR ',
+                'LOWER(p.ProductNo) LIKE ''%', LOWER(TRIM(p_allSearchableFields)), '%'' OR ',
+                'vp.SKU = ''', p_allSearchableFields, '''',
+            ')');
         END IF;
 
     END IF;
 
     
+    
+    
     SET _query = CONCAT(
-        'SELECT
-            (SELECT JSON_ARRAYAGG(DISTINCT vpd.variationValue)
-             FROM variation_product_detail vpd
-             WHERE vpd.variationProductId = vp.variationProductId) AS variationValue,
-
-            p.productId,
-            sip.variationProductId,
-            p.productName,
-            p.brandId,
-            br.brandName,
-
-            CONCAT(p.productName, '' '',
-                IFNULL(
-                    (SELECT GROUP_CONCAT(DISTINCT vpd.variationValue SEPARATOR '', '')
-                     FROM variation_product_detail vpd
-                     WHERE vpd.variationProductId = vp.variationProductId),
-                '''')
-            ) AS productDescription,
-
-            pt.productTypeName,
-            p.measurementUnitId,
-            mu.measurementUnitName,
-            p.imageUrl,
-
-            (SELECT JSON_ARRAYAGG(
-                JSON_OBJECT(''id'', c.categoryId, ''displayName'', c.categoryName))
-             FROM product_category pc
-             INNER JOIN category c ON pc.CategoryId = c.CategoryId
-             WHERE pc.ProductId = p.ProductId) AS categories,
-
-            p.productNo,
-            vp.SKU AS sku,
-            vp.barcode AS barcode,
-
-            IFNULL(SUM(nsi.stockQty), 0) AS stockQty,
-            CASE WHEN i.inventoryId IS NULL THEN FALSE ELSE TRUE END AS isStockTracked,
-
-            i.reorderLevel,
-            sip.storeId,
-
-            CAST(p.isNotForSelling AS UNSIGNED) AS isNotForSelling,
-            CAST(p.isUnique AS UNSIGNED) AS isUnique,
-            CAST(p.isProductItem AS UNSIGNED) AS isProductItem,
-            CAST(p.isExpiringProduct AS UNSIGNED) AS isExpiringProduct,
-            CAST(p.isAssemblyProduct AS UNSIGNED) AS isAssemblyProduct,
-
-            vp.unitPrice,
-            vp.unitCost,
-            vp.taxPerc,
-
-            sip.allProductId,
-            sip.inventoryId
-
-        FROM store_inventory_product sip
-        INNER JOIN variation_product vp ON sip.variationProductId = vp.variationProductId
-        INNER JOIN product p ON p.ProductId = vp.productId
-        INNER JOIN product_type pt ON p.productTypeId = pt.productTypeId
-        INNER JOIN measurement_unit mu ON p.MeasurementUnitId = mu.MeasurementUnitId
-        INNER JOIN brand br ON p.BrandId = br.BrandId
-        INNER JOIN store s ON sip.storeId = s.storeId
-        INNER JOIN product_category mpc ON p.productId = mpc.productId
-        LEFT JOIN inventory i ON sip.inventoryId = i.inventoryId
-        LEFT JOIN non_serialized_item nsi ON i.inventoryId = nsi.inventoryId
-        ',
+        'SELECT ',
+            '(SELECT JSON_ARRAYAGG(DISTINCT vpd.variationValue) ',
+            ' FROM variation_product_detail vpd ',
+            ' WHERE vpd.variationProductId = vp.variationProductId) AS variationValue, ',
+            'p.productId, sip.variationProductId, p.productName, p.brandId, br.brandName, ',
+            'CONCAT(p.productName, " ", ',
+            'IFNULL((SELECT GROUP_CONCAT(DISTINCT vpd.variationValue SEPARATOR ", ") ',
+            'FROM variation_product_detail vpd ',
+            'WHERE vpd.variationProductId = vp.variationProductId), "")) AS productDescription, ',
+            'pt.productTypeName, p.measurementUnitId, mu.measurementUnitName, p.imageUrl, ',
+            '(SELECT JSON_ARRAYAGG(DISTINCT JSON_OBJECT("id", c.categoryId, "displayName", c.categoryName)) ',
+            ' FROM product_category pc INNER JOIN Category c ON pc.CategoryId = c.CategoryId ',
+            ' WHERE pc.ProductId = p.ProductId) AS categories, ',
+            'p.productNo, vp.SKU AS sku, vp.barcode, ',
+            'SUM(nsi.stockQty) AS stockQty, ',
+            'IFNULL(SUM(nsi.stockQty), 0) AS stockQtyDisplay, ',
+            'CASE WHEN i.inventoryId IS NULL THEN FALSE ELSE TRUE END AS isStockTracked, ',
+            'i.reorderLevel, sip.storeId, ',
+            'CAST(p.isNotForSelling   AS UNSIGNED) AS isNotForSelling, ',
+            'CAST(p.isUnique          AS UNSIGNED) AS isUnique, ',
+            'CAST(p.isProductItem     AS UNSIGNED) AS isProductItem, ',
+            'vp.unitPrice, vp.unitCost, vp.taxPerc, ',
+            'c.contactName, c.contactCode, p.productTypeId, ',
+            's.storeId, s.storeName, s.storeCode, ',
+            'CAST(p.isExpiringProduct AS UNSIGNED) AS isExpiringProduct, ',
+            'sip.allProductId, sip.inventoryId, ',
+            'CAST(p.isAssemblyProduct AS UNSIGNED) AS isAssemblyProduct ',
+        'FROM store_inventory_product sip ',
+        'INNER JOIN variation_product  vp  ON sip.variationProductId = vp.variationProductId ',
+        'INNER JOIN product            p   ON vp.productId           = p.ProductId ',
+        'INNER JOIN product_type       pt  ON p.productTypeId        = pt.productTypeId ',
+        'INNER JOIN measurement_unit   mu  ON p.MeasurementUnitId    = mu.MeasurementUnitId ',
+        'INNER JOIN brand              br  ON p.BrandId              = br.BrandId ',
+        'INNER JOIN store              s   ON sip.storeId            = s.storeId ',
+        'INNER JOIN product_category   mpc ON p.productId            = mpc.productId ',
+        'LEFT  JOIN inventory          i   ON sip.inventoryId        = i.inventoryId ',
+        'LEFT  JOIN non_serialized_item nsi ON i.inventoryId         = nsi.inventoryId ',
+        'LEFT  JOIN contact            c   ON nsi.supplierId         = c.contactId ',
         _filter,
-        ' GROUP BY p.ProductId, sip.variationProductId, sip.storeId
-          ORDER BY p.productName ASC ',
+        ' GROUP BY p.ProductId, sip.variationProductId, sip.storeId, sip.allProductId, sip.inventoryId ',
+        ' ORDER BY p.productName ASC, s.storeName ASC ',
         _PagingQuery
     );
 
@@ -10819,12 +12636,18 @@ sp: BEGIN
 
     
     SET @queryTotal = CONCAT(
-        'SELECT COUNT(DISTINCT p.ProductId, sip.storeId)
-         INTO @totalRows
-         FROM store_inventory_product sip
-         INNER JOIN variation_product vp ON sip.variationProductId = vp.variationProductId
-         INNER JOIN product p ON p.ProductId = vp.productId
-         INNER JOIN product_category mpc ON p.productId = mpc.productId ',
+        'SELECT COUNT(DISTINCT p.ProductId, sip.variationProductId, sip.storeId) INTO @totalRows ',
+        'FROM store_inventory_product sip ',
+        'INNER JOIN variation_product  vp  ON sip.variationProductId = vp.variationProductId ',
+        'INNER JOIN product            p   ON vp.productId           = p.ProductId ',
+        'INNER JOIN product_type       pt  ON p.productTypeId        = pt.productTypeId ',
+        'INNER JOIN measurement_unit   mu  ON p.MeasurementUnitId    = mu.MeasurementUnitId ',
+        'INNER JOIN brand              br  ON p.BrandId              = br.BrandId ',
+        'INNER JOIN store              s   ON sip.storeId            = s.storeId ',
+        'INNER JOIN product_category   mpc ON p.productId            = mpc.productId ',
+        'LEFT  JOIN inventory          i   ON sip.inventoryId        = i.inventoryId ',
+        'LEFT  JOIN non_serialized_item nsi ON i.inventoryId         = nsi.inventoryId ',
+        'LEFT  JOIN contact            c   ON nsi.supplierId         = c.contactId ',
         _filter
     );
 
@@ -10833,8 +12656,9 @@ sp: BEGIN
     DEALLOCATE PREPARE stmt;
 
     SET p_TotalRows = @totalRows;
+
     SET p_ResponseStatus = 'success';
-    SET p_OutputMessage = 'loaded successfully';
+    SET p_OutputMessage  = 'loaded successfully';
 
 END ;;
 DELIMITER ;
@@ -17554,4 +19378,4 @@ DELIMITER ;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2026-01-21 13:07:04
+-- Dump completed on 2026-01-23 21:19:39
